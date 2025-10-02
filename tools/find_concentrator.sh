@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+
+# -----------------------------------------------------------------------------
+#
+# Tries to detect existing concentrators, run by:
+#
+# docker run --privileged --rm rakwireless/udp-packet-forwarder find_concentrator
+#
+# By default it will reset the concentrator using GPIO6 and GPIO17, if
+# you know the reset pin is connected to any other GPIO(S) you can use the RESET_GPIO
+# environment variable:
+#
+# docker run --privileged --rm -e RESET_GPIO="12 13" rakwireless/udp-packet-forwarder find_concentrator
+#
+# Finally, you can also limit the interfaces to scan by setting SCAN_USB or SCAN_SPI to 0,
+# so this command below will only scan for SUB concentrators:
+#
+# docker run --privileged --rm -e SCAN_SPI=0 rakwireless/udp-packet-forwarder find_concentrator
+#
+# -----------------------------------------------------------------------------
+
+. ./tools/utils.sh
+
+cd "$( dirname "$0" )" || exit
+
+# -----------------------------------------------------------------------------
+# Colors
+# -----------------------------------------------------------------------------
+
+WIDTH_DEVICE=0
+WIDTH_DESIGN=13
+WIDTH_ID=21
+
+FOUND=0
+
+function pad() {
+    
+    TEXT=$1
+    LENGTH=$2
+    FILL=$3
+    
+    START=${#TEXT}
+    COUNT=$(( LENGTH - START - 1 ))
+    printf "${COLOR_YELLOW}%s" "$TEXT"
+    for (( i = 0; i < "$COUNT"; ++i )); do 
+        printf "${COLOR_YELLOW}%s" "$FILL"
+    done
+
+}
+
+# -----------------------------------------------------------------------------
+# Chip ID
+# -----------------------------------------------------------------------------
+
+function test_device {
+
+    local DESIGN=$1
+    local DEVICE=$2
+    local GATEWAY_EUI=""
+    local TIMEOUT=2
+
+    pad "$DEVICE" $WIDTH_DEVICE " "
+
+    CHIP_ID_COMMAND="./${DESIGN}_chip_id"
+        
+    if [[ "$DESIGN" == "corecell" ]]; then
+        [[ "$DEVICE" == *"tty"* ]] && COM_TYPE="-u"
+        GATEWAY_EUI=$( timeout "${TIMEOUT}s" "$CHIP_ID_COMMAND" "$COM_TYPE" -d "$DEVICE" 2>/dev/null | grep 'EUI' | sed 's/^.*0x//' | tr "[:lower:]" "[:upper:]" )
+    fi
+    
+    if [[ "$DESIGN" == "sx1280" ]] && [[ "$DEVICE" == *"tty"* ]]; then 
+        GATEWAY_EUI=$( timeout "${TIMEOUT}s" "$CHIP_ID_COMMAND" -d "$DEVICE" 2>/dev/null | grep 'EUI' | sed 's/^.*0x//' | tr "[:lower:]" "[:upper:]" )
+    fi
+        
+    if [[ -n "${GATEWAY_EUI}" ]]; then
+        echo -e -n "\rConcentrator in $DEVICE with EUI $GATEWAY_EUI ($DESIGN)\n"
+        FOUND=$(( FOUND + 1 ))
+    else
+        echo -e -n "\r"
+        pad "" $WIDTH_DEVICE " "
+        echo -e -n "\r"
+    fi
+
+}
+
+# -----------------------------------------------------------------------------
+# Create reset file
+# -----------------------------------------------------------------------------
+
+# Raspberry Pi requires using gpiochip4
+if [[ $( grep -c "Raspberry Pi 5" /proc/cpuinfo ) -eq 0  ]]; then
+    GPIO_CHIP=${GPIO_CHIP:-gpiochip0}
+else
+    GPIO_CHIP=${GPIO_CHIP:-gpiochip4}
+fi
+
+# Create reset file
+sed -i "s#{{GPIO_CHIP}}#${GPIO_CHIP:-gpiochip0}#" reset_lgw.sh
+sed -i "s#{{RESET_GPIO}}#${RESET_GPIO:-6 17}#" reset_lgw.sh
+sed -i "s#{{POWER_EN_GPIO}}#${POWER_EN_GPIO:-0}#" reset_lgw.sh
+sed -i "s#{{POWER_EN_LOGIC}}#${POWER_EN_LOGIC:-1}#" reset_lgw.sh
+chmod +x reset_lgw.sh
+
+# -----------------------------------------------------------------------------
+# Test all devices
+# -----------------------------------------------------------------------------
+
+SCAN_USB=${SCAN_USB:-1}
+SCAN_SPI=${SCAN_SPI:-1}
+DESIGN=${DESIGN:-"corecell"}
+
+if [[ $SCAN_USB -eq 1 ]]; then
+    if [[ $SCAN_SPI -eq 1 ]]; then
+        DEVICES=$( ls /dev/spidev* /dev/ttyACM* /dev/ttyUSB* /dev/ttyV* 2> /dev/null )
+    else
+        DEVICES=$( ls /dev/ttyACM* /dev/ttyUSB* /dev/ttyV* 2> /dev/null )
+    fi
+else
+    if [[ $SCAN_SPI -eq 1 ]]; then
+        DEVICES=$( ls /dev/spidev* 2> /dev/null )
+    else
+        DEVICES=""
+    fi
+fi
+
+if [[ -z "${DEVICES}" ]]; then
+    echo "No available interfaces. Quitting."
+    exit 0
+fi
+
+for DEVICE in $DEVICES; do
+    [[ ${#DEVICE} -gt $WIDTH_DEVICE ]] && WIDTH_DEVICE=${#DEVICE}
+done
+WIDTH_DEVICE=$(( WIDTH_DEVICE + 5 ))
+
+for DEVICE in $DEVICES; do
+    test_device "$DESIGN" "$DEVICE"
+done
+
+echo -e -n "${COLOR_END}"
+exit $FOUND
