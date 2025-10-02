@@ -21,6 +21,7 @@ AVAILABLE_CONFIGURATIONS="
   rak7392-lora
   rak7392-lte
   rak7392-mioty
+  rak7393-lora
   rak7393-lora-lte
   rak7393-lora-16ch-lte
   rak7393-lora-2g4-lte
@@ -78,7 +79,7 @@ HAS_CAMERAS=0
 HAS_EMMC=1
 HAS_NVME=0
 HAS_RTC=$(( $IS_RAK7391 || $IS_RAK7392 || $IS_RAK7393 ))
-HAS_LEDS=$IS_RAK7391
+HAS_LEDS=$(( $IS_RAK7391 || $IS_RAK7393 ))
 HAS_BUZZER=$IS_RAK7391
 HAS_GPIO_EXPANDERS=$IS_RAK7391
 HAS_FAN_DRIVER=$IS_RAK7391
@@ -87,12 +88,14 @@ HAS_SHTC3=$IS_RAK7391
 HAS_ADM1184e=$(( $IS_RAK7391 || $IS_RAK7392 ))
 HAS_RTL8125=$(( $IS_RAK7391 || $IS_RAK7392 ))
 HAS_VL805=$(( $IS_RAK7391 || $IS_RAK7392 || $IS_RAK7394 ))
-HAS_CH340=$IS_RAK7391
+HAS_CH340=$(( $IS_RAK7391 || $IS_RAK7393 ))
 HAS_ATEC608=$IS_RAK7391
-HAS_USB2_HUB=$IS_RAK7391
+HAS_USB2HUB=$(( $IS_RAK7391 || $IS_RAK7393 ))
 HAS_RTL8111=$IS_RAK7392
 
 EXPECTED_RAK5146=$( [ $( echo $CONFIGURATION | grep -w "16ch" | wc -l ) -eq 1 ] && echo 2 || echo 1 )
+EXPECTED_CH340=$( [ $IS_RAK7391 -eq 1 ] && echo 2 || echo 1 )
+EXPECTED_USB2HUB=$( [ $IS_RAK7391 -eq 1 ] && echo 2 || echo 1 )
 EXPECTED_CAMERAS=1
 
 # -----------------------------------------------------------------------------
@@ -146,8 +149,10 @@ oneTimeTearDown() {
 # -----------------------------------------------------------------------------
 
 testLED() {
-  gpioset 2 6=0 && gpioset 2 7=0 && sleep 1 && gpioset 2 6=1 && gpioset 2 7=1
-  assertEquals "Error toggling the LEDs on the carrier board" 0 $?
+  local RET=255
+  [ $IS_RAK7391 -eq 1 ] && RET=$( gpioset 2 6=0 && gpioset 2 7=0 && sleep 1 && gpioset 2 6=1 && gpioset 2 7=1 && echo $? )
+  [ $IS_RAK7393 -eq 1 ] && RET=$( gpioset 0 5=0 && sleep 1 && gpioset 0 5=1 && echo $? )
+  assertEquals "Error toggling the LEDs on the carrier board" 0 $RET
 }
 
 testBuzzer() {
@@ -235,24 +240,24 @@ testNVMe() {
   assertEquals "NMVe drive not found" 1 $COUNT
 }
 
-testADM1184e() {
+testADM1184() {
   COUNT=$( lspci | grep ASM1184e | wc -l )
   assertEquals "ASM1184e PCIe Switch not found" 5 $COUNT
 }
 
-testUSB2() {
+testUSB2Hub() {
   COUNT=$( lsusb | grep "Terminus Technology" | wc -l )
-  assertEquals "USB2 Hub not found" 2 $COUNT
+  assertEquals "USB2 Hub not found" $EXPECTED_USB2HUB $COUNT
 }
 
-testUSB3() {
+testVL805() {
   COUNT=$( lspci | grep VL805 | wc -l )
   assertEquals "VL805 USB3 Hub not found" 1 $COUNT
 }
 
-testUSB2UART() {
+testCH340() {
   COUNT=$( lsusb | grep CH340 | wc -l )
-  assertEquals "CH340 USB to UART chip not found" 2 $COUNT
+  assertEquals "CH340 USB to UART chip not found" $EXPECTED_CH340 $COUNT
 }
 
 testRTL8125() {
@@ -291,10 +296,10 @@ suite() {
   [ $HAS_MIOTY -eq 1 ] && suite_addTest testMioty
   [ $HAS_EMMC -eq 1 ] && suite_addTest testEMMC
   [ $HAS_NVME -eq 1 ] && suite_addTest testNVMe
-  [ $HAS_ADM1184e -eq 1 ] && suite_addTest testADM1184e
-  [ $HAS_USB2_HUB -eq 1 ] && suite_addTest testUSB2
-  [ $HAS_VL805 -eq 1 ] && suite_addTest testUSB3
-  [ $HAS_CH340 -eq 1 ] && suite_addTest testUSB2UART
+  [ $HAS_ADM1184e -eq 1 ] && suite_addTest testADM1184
+  [ $HAS_USB2HUB -eq 1 ] && suite_addTest testUSB2Hub
+  [ $HAS_VL805 -eq 1 ] && suite_addTest testVL805
+  [ $HAS_CH340 -eq 1 ] && suite_addTest testCH340
   [ $HAS_RTL8125 -eq 1 ] && suite_addTest testRTL8125
   [ $HAS_RTL8111 -eq 1 ] && suite_addTest testRTL8111
 
