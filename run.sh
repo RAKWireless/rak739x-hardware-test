@@ -205,7 +205,7 @@ testSecurityElement() {
 
 testTemperatureSensor() {
   echo -n "${COLOR_YELLOW}"
-  python3 tools/shtc3.py -d 100 2> /dev/null
+  ./tools/shtc3_read
   echo -n "${COLOR_END}"
   assertEquals "Error retrieving temperature from Temperature sensort" 0 $?
 }
