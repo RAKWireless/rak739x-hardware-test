@@ -263,8 +263,8 @@ testWiFi() {
 
 suite() {
   
-  [ $HAS_LEDS -eq 1 ] && suite_addTest testLED
   [ $HAS_BUZZER -eq 1 ] && suite_addTest testBuzzer
+  [ $HAS_LEDS -eq 1 ] && suite_addTest testLED
   [ $HAS_CAMERAS -eq 1 ] && suite_addTest testCameras
   [ $HAS_GPIO_EXPANDERS -eq 1 ] && suite_addTest testGPIOExpanders
   [ $HAS_WIFI -eq 1 ] && suite_addTest testWiFi
@@ -274,10 +274,7 @@ suite() {
   [ $HAS_RTC -eq 1 ] && suite_addTest testRTC
   [ $HAS_ATEC608 -eq 1 ] && suite_addTest testSecurityElement
   [ $HAS_SHTC3 -eq 1 ] && suite_addTest testTemperatureSensor
-  [ $HAS_RAK5146 -eq 1 ] && suite_addTest testRAK5146
-  [ $HAS_RAK5148 -eq 1 ] && suite_addTest testRAK5148
   [ $HAS_RAK8123 -eq 1 ] && suite_addTest testRAK8213
-  [ $HAS_MIOTY -eq 1 ] && suite_addTest testMioty
   [ $HAS_EMMC -eq 1 ] && suite_addTest testEMMC
   [ $HAS_NVME -eq 1 ] && suite_addTest testNVMe
   [ $HAS_ADM1184e -eq 1 ] && suite_addTest testADM1184
@@ -286,6 +283,9 @@ suite() {
   [ $HAS_CH340 -eq 1 ] && suite_addTest testCH340
   [ $HAS_RTL8125 -eq 1 ] && suite_addTest testRTL8125
   [ $HAS_RTL8111 -eq 1 ] && suite_addTest testRTL8111
+  [ $HAS_MIOTY -eq 1 ] && suite_addTest testMioty
+  [ $HAS_RAK5146 -eq 1 ] && suite_addTest testRAK5146
+  [ $HAS_RAK5148 -eq 1 ] && suite_addTest testRAK5148
 
 }
 
