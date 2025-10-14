@@ -5,9 +5,9 @@ This is a shell script that uses shutil2 to perform unit tests on  different har
 Current configuration IDs are:
 
 ```
-$ ./rak739x_tests.sh 
+$ ./run.sh 
 
-Usage: ./rak739x_tests.sh <configuration_id>
+Usage: ./run.sh <configuration_id>
 
 Posible configuration_id values:
 * rak7391-indoor-lora
@@ -32,7 +32,7 @@ Posible configuration_id values:
 Running a certain configuration executes a subset of the available tests. A successful run looks like this:
 
 ```
-$ ./rak739x_tests.sh rak7391-indoor-lora-mioty-lte
+$ ./run.sh rak7391-indoor-lora-mioty-lte
 
 Dependency virtualenv already available
 Dependency lshw already available
@@ -40,11 +40,11 @@ Dependency jq already available
 Installing required python packages
 
 CPU: Raspberry Pi Compute Module 4 Rev 1.1
-CPU Serial Number: 10000000df6b752a
+CPU Serial Number: 10000000dfxxxxxx
 Memory: 3.7Gi
 Storage: 29G
-Device EUI: d83addFFFE061d3d
-OS: rakpios-0.9.2-arm64
+Device EUI: d83addFFFExxxxxx
+OS: rakpios-0.9.3-arm64
 
 testLED
 testBuzzer
@@ -56,10 +56,9 @@ testADC
 testRTC
 testSecurityElement
 testTemperatureSensor
-Temperature: 38.4 ºC
-Humidity: 37.0 %
+SHTC3 output: 34.90 C, 37.23 %RH
 testRAK5146
-Concentrator in /dev/ttyACM0 with EUI 0016C001F1568704 (corecell)
+Concentrator in /dev/ttyACM0 with EUI 0016C001F1xxxxxx (corecell)
 testRAK8213       
 testMioty
 testEMMC
@@ -87,11 +86,11 @@ Dependency jq already available
 Installing required python packages
 
 CPU: Raspberry Pi Compute Module 4 Rev 1.1
-CPU Serial Number: 10000000df6b752a
+CPU Serial Number: 10000000dfxxxxxx
 Memory: 3.7Gi
 Storage: 29G
-Device EUI: d83addFFFE061d3d
-OS: rakpios-0.9.2-arm64
+Device EUI: d83addFFFExxxxxx
+OS: rakpios-0.9.3-arm64
 
 testLED
 testBuzzer
@@ -103,10 +102,9 @@ testADC
 testRTC
 testSecurityElement
 testTemperatureSensor
-Temperature: 38.6 ºC
-Humidity: 37.4 %
+SHTC3 output: 38.60 C, 37.4 %RH
 testRAK5146
-Concentrator in /dev/ttyACM0 with EUI 0016C001F1568704 (corecell)
+Concentrator in /dev/ttyACM0 with EUI 0016C001F1xxxxxx (corecell)
 testRAK5148       
 ASSERT:Wrong number of RAK5148 found expected:<1> but was:<0>
 shunit2:ERROR testRAK5148() returned non-zero return code.
