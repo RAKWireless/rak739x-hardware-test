@@ -29,11 +29,7 @@ AVAILABLE_CONFIGURATIONS="
   rak7394-lora
 "
 
-# Show usages if called without parameters
-if [ $# -ne 1 ] 
-then
-  echo
-  echo "${COLOR_ERROR}Usage: $0 <configuration_id>${COLOR_END}"
+print_configurations() {
   echo
   echo "${COLOR_ERROR}Posible configuration_id values:${COLOR_END}"
   for CONFIGURATION in $AVAILABLE_CONFIGURATIONS
@@ -41,9 +37,15 @@ then
     echo "${COLOR_ERROR}* $CONFIGURATION"
   done
   echo
+}
+
+# Show usages if called without parameters
+if [ $# -ne 1 ] 
+then
+  echo
+  echo "${COLOR_ERROR}Usage: $0 <configuration_id>${COLOR_END}"
+  print_configurations
   exit 1
-HAS_GPIO_EXPANDERS=$IS_RAK7391
-HAS_FAN_DRIVER=$IS_RAK7391
 fi
 CONFIGURATION="$1"
 shift
@@ -52,12 +54,8 @@ shift
 if [ $( echo $AVAILABLE_CONFIGURATIONS | grep -w $CONFIGURATION | wc -l ) -ne 1 ]
 then
   echo
-  echo "${COLOR_ERROR}Wrong configuration value, posible values:${COLOR_END}"
-  for CONFIGURATION in $AVAILABLE_CONFIGURATIONS
-  do
-    echo "${COLOR_ERROR}* $CONFIGURATION"
-  done
-  echo
+  echo "${COLOR_ERROR}Wrong configuration value.${COLOR_END}"
+  print_configurations
   exit 1
 fi
 
@@ -106,17 +104,9 @@ oneTimeSetUp() {
   dependencyCheck virtualenv python3-virtualenv
   dependencyCheck lshw
   dependencyCheck jq
-  #dependencyInstalled
 
-  # Create python virtual env
-  if [ $HAS_SHTC3 -eq 1 ] || [ $HAS_BUZZER -eq 1 ]
-  then
-    echo "${COLOR_INFO}Installing required python packages${COLOR_END}"
-    rm -rf .env
-    virtualenv .env  > /dev/null
-    . .env/bin/activate
-    pip install -r tools/requirements.txt > /dev/null 
-  fi
+  # Create python virtual env (only if required)
+  [ $HAS_BUZZER -eq 1 ] && pythonEnvSetup
 
   # info
   systemInfo
@@ -134,13 +124,7 @@ oneTimeTearDown() {
   dependencyRemove
 
   # Tear down python environment
-  if [ -d .env ] 
-  then
-    echo
-    echo "${COLOR_INFO}Removing python packages${COLOR_END}"
-    #deactivate
-    rm -rf .env
-  fi
+  #pythonEnvRemove
 
   return 0
 

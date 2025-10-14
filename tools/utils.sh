@@ -72,6 +72,22 @@ dependencyCheck() {
 
 }
 
+pythonEnvSetup() {
+    echo "${COLOR_INFO}Installing required python packages${COLOR_END}"
+    [ ! -d .env ] && virtualenv .env  > /dev/null
+    . .env/bin/activate
+    pip install -r tools/requirements.txt > /dev/null 
+}
+
+pythonEnvRemove() {
+  if [ -d .env ] 
+  then
+    echo
+    echo "${COLOR_INFO}Removing python packages${COLOR_END}"
+    rm -rf .env
+  fi
+}
+
 systemInfo() {
     
     . /etc/os-release
