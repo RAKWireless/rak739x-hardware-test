@@ -27,6 +27,7 @@ AVAILABLE_CONFIGURATIONS="
   rak7393-lora-2g4-lte
   rak7393-lora-mioty-lte
   rak7394-lora
+  transmission
 "
 
 print_configurations() {
@@ -66,18 +67,21 @@ IS_RAK7392=$( [ "$CARRIER_BOARD" = "rak7392" ] && echo 1 || echo 0 )
 IS_RAK7393=$( [ "$CARRIER_BOARD" = "rak7393" ] && echo 1 || echo 0 )
 IS_RAK7394=$( [ "$CARRIER_BOARD" = "rak7394" ] && echo 1 || echo 0 )
 
+IS_TRANSMISSION=$( [ "$CARRIER_BOARD" = "transmission" ] && echo 1 || echo 0 )
+
 # Features, based on configuration id
 HAS_RAK5146=$( echo $CONFIGURATION | grep -w "lora" | wc -l )
 HAS_RAK5148=$( echo $CONFIGURATION | grep -w "2g4" | wc -l )
 HAS_RAK8123=$( echo $CONFIGURATION | grep -w "lte" | wc -l )
 HAS_MIOTY=$( echo $CONFIGURATION | grep -w "mioty" | wc -l )
 HAS_RAK1906=$( echo $CONFIGURATION | grep -w "rak7391" | grep -w "indoor" | wc -l )
-HAS_WIFI=1
+HAS_WIFI=$( [ $IS_TRANSMISSION -eq 1 ] && echo 0 || echo 1 )
 HAS_CAMERAS=0
-HAS_EMMC=1
+HAS_EMMC=$( [ $IS_TRANSMISSION -eq 1 ] && echo 0 || echo 1 )
 HAS_NVME=0
 HAS_RTC=$(( $IS_RAK7391 || $IS_RAK7392 || $IS_RAK7393 ))
 HAS_LEDS=$(( $IS_RAK7391 || $IS_RAK7393 ))
+HAS_BUTTON=$(( $IS_RAK7392 || $IS_RAK7393 ))
 HAS_BUZZER=$IS_RAK7391
 HAS_GPIO_EXPANDERS=$IS_RAK7391
 HAS_FAN_DRIVER=$IS_RAK7391
@@ -132,11 +136,34 @@ oneTimeTearDown() {
 
 # -----------------------------------------------------------------------------
 
+testTransmission() {
+  echo "${COLOR_CYAN}Starting transmission test${COLOR_RESET}"
+  echo -n "${COLOR_YELLOW}"
+  tools/transmiter.sh -d /dev/ttyACM0
+  echo -n "${COLOR_END}"
+  assertEquals 1 1
+}
+
 testLED() {
   local RET=255
-  [ $IS_RAK7391 -eq 1 ] && RET=$( gpioset 2 6=0 && gpioset 2 7=0 && sleep 1 && gpioset 2 6=1 && gpioset 2 7=1 && echo $? )
-  [ $IS_RAK7393 -eq 1 ] && RET=$( gpioset 0 5=0 && sleep 1 && gpioset 0 5=1 && echo $? )
+  if command -v gpiofind 
+  then
+    [ $IS_RAK7391 -eq 1 ] && RET=$( gpioset 2 6=0 && gpioset 2 7=0 && sleep 1 && gpioset 2 6=1 && gpioset 2 7=1 && echo $? )
+    [ $IS_RAK7393 -eq 1 ] && RET=$( gpioset 0 5=0 && sleep 1 && gpioset 0 5=1 && echo $? )
+  else
+    [ $IS_RAK7391 -eq 1 ] && RET=$( gpioset -t0 IO0_6=0 && gpioset -t0 IO0_7=0 && sleep 1 && gpioset -t0 IO0_6=1 && gpioset -t0 IO0_7=1 && echo $? )
+    [ $IS_RAK7393 -eq 1 ] && RET=$( gpioset -t0 GPIO5=0 && sleep 1 && gpioset -t0 GPIO5=1 && echo $? )
+  fi
   assertEquals "Error toggling the LEDs on the carrier board" 0 $RET
+}
+
+testButton() {
+  # TODO RAK7392/3: Test GPIO16 going down on button press
+  echo "${COLOR_CYAN}Press the device reset button NOW${COLOR_RESET}"
+  echo -n "${COLOR_YELLOW}"
+  timeout 20 gpiomon -n1 -f $( gpiofind GPIO16 )
+  echo -n "${COLOR_END}"
+  assertEquals "Error detecting button click" 0 $?
 }
 
 testBuzzer() {
@@ -264,6 +291,7 @@ testWiFi() {
 suite() {
   
   [ $HAS_BUZZER -eq 1 ] && suite_addTest testBuzzer
+  [ $HAS_BUTTON -eq 1 ] && suite_addTest testButton
   [ $HAS_LEDS -eq 1 ] && suite_addTest testLED
   [ $HAS_CAMERAS -eq 1 ] && suite_addTest testCameras
   [ $HAS_GPIO_EXPANDERS -eq 1 ] && suite_addTest testGPIOExpanders
@@ -286,6 +314,8 @@ suite() {
   [ $HAS_MIOTY -eq 1 ] && suite_addTest testMioty
   [ $HAS_RAK5146 -eq 1 ] && suite_addTest testRAK5146
   [ $HAS_RAK5148 -eq 1 ] && suite_addTest testRAK5148
+
+  [ $IS_TRANSMISSION -eq 1 ] && suite_addTest testTransmission
 
 }
 
