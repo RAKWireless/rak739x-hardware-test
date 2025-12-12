@@ -103,3 +103,23 @@ systemInfo() {
     echo "${COLOR_END}"
 
 }
+
+strindex() { 
+    local STR="$1"
+    local SEARCH="$2"
+    local INDEX=1
+    while true
+    do
+        WORD=$( echo "$STR" | cut -d' ' -f$INDEX )
+        [ "$WORD" = "" ] && break
+        [ "$WORD" = "$SEARCH" ] && echo $INDEX && return
+        INDEX=$(( INDEX+1 ))
+    done
+    echo 0
+}
+
+gpiod_version() {
+    OUTPUT=$( gpioset -v )
+    VERSION=$( echo $OUTPUT | cut -d' ' -f 3 |  cut -d'.' -f1 | sed 's/v//' )
+    echo $VERSION
+}

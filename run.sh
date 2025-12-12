@@ -87,7 +87,7 @@ HAS_GPIO_EXPANDERS=$IS_RAK7391
 HAS_FAN_DRIVER=$IS_RAK7391
 HAS_ADC=$IS_RAK7391
 HAS_SHTC3=$IS_RAK7391
-HAS_ADM1184e=$(( $IS_RAK7391 || $IS_RAK7392 ))
+HAS_ASM1184e=$(( $IS_RAK7391 || $IS_RAK7392 ))
 HAS_RTL8125=$(( $IS_RAK7391 || $IS_RAK7392 ))
 HAS_VL805=$(( $IS_RAK7391 || $IS_RAK7392 || $IS_RAK7394 ))
 HAS_CH340=$(( $IS_RAK7391 || $IS_RAK7393 ))
@@ -110,7 +110,7 @@ oneTimeSetUp() {
   dependencyCheck jq
 
   # Create python virtual env (only if required)
-  [ $HAS_BUZZER -eq 1 ] && pythonEnvSetup
+  #pythonEnvSetup
 
   # info
   systemInfo
@@ -146,7 +146,7 @@ testTransmission() {
 
 testLED() {
   local RET=255
-  if command -v gpiofind 
+  if command -v gpiofind >/dev/null 2>&1
   then
     [ $IS_RAK7391 -eq 1 ] && RET=$( gpioset 2 6=0 && gpioset 2 7=0 && sleep 1 && gpioset 2 6=1 && gpioset 2 7=1 && echo $? )
     [ $IS_RAK7393 -eq 1 ] && RET=$( gpioset 0 5=0 && sleep 1 && gpioset 0 5=1 && echo $? )
@@ -167,7 +167,7 @@ testButton() {
 }
 
 testBuzzer() {
-  python3 tools/buzzer.py -d 500
+  tools/buzzer.sh
   assertEquals "Error playing buzzer" 0 $?
 }
 
@@ -251,7 +251,7 @@ testNVMe() {
   assertEquals "NMVe drive not found" 1 $COUNT
 }
 
-testADM1184() {
+testASM1184() {
   COUNT=$( lspci | grep ASM1184e | wc -l )
   assertEquals "ASM1184e PCIe Switch not found" 5 $COUNT
 }
@@ -305,7 +305,7 @@ suite() {
   [ $HAS_RAK8123 -eq 1 ] && suite_addTest testRAK8213
   [ $HAS_EMMC -eq 1 ] && suite_addTest testEMMC
   [ $HAS_NVME -eq 1 ] && suite_addTest testNVMe
-  [ $HAS_ADM1184e -eq 1 ] && suite_addTest testADM1184
+  [ $HAS_ASM1184e -eq 1 ] && suite_addTest testASM1184
   [ $HAS_USB2HUB -eq 1 ] && suite_addTest testUSB2Hub
   [ $HAS_VL805 -eq 1 ] && suite_addTest testVL805
   [ $HAS_CH340 -eq 1 ] && suite_addTest testCH340
