@@ -106,11 +106,24 @@ oneTimeSetUp() {
 
   # Install dependencies
   dependencyCheck virtualenv python3-virtualenv
-  dependencyCheck lshw
+  dependencyCheck i2cdetect i2c-tools
   dependencyCheck jq
+  dependencyCheck lshw
 
-  # Create python virtual env (only if required)
-  #pythonEnvSetup
+  # Enable I2C
+  if [ $( raspi-config nonint get_i2c ) -ne 0 ]
+  then
+    echo "${COLOR_INFO}Enabling I2C${COLOR_END}"
+    sudo raspi-config nonint do_i2c 0
+  fi
+
+  # Old libgpiod
+  if [ ! -f /usr/bin/libgpiod.so.2 ]
+  then
+    echo "${COLOR_INFO}Copying libgpiod.so.2 to /usr/bin/${COLOR_END}"
+    sudo cp tools/libgpiod.so.2 /usr/bin/
+    sudo ldconfig
+  fi
 
   # info
   systemInfo
@@ -123,9 +136,6 @@ oneTimeTearDown() {
   
   # Hack for https://github.com/kward/shunit2/issues/112
   [ "${_shunit_name_}" = 'EXIT' ] && return 0
-
-  # System dependencies
-  dependencyRemove
 
   # Tear down python environment
   #pythonEnvRemove
