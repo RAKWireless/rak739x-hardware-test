@@ -118,7 +118,7 @@ oneTimeSetUp() {
   fi
 
   # Old libgpiod
-  if [ ! -f /usr/bin/libgpiod.so.2 ]
+  if [ ! -f /usr/bin/libgpiod.so.2 ] && [ -f tools/libgpiod.so.2 ]
   then
     echo "${COLOR_INFO}Copying libgpiod.so.2 to /usr/bin/${COLOR_END}"
     sudo cp tools/libgpiod.so.2 /usr/bin/
